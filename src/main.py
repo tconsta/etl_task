@@ -26,11 +26,22 @@ db.create_table()
 db.write(it1_from_csv1)
 
 sql_basic = 'SELECT * FROM "important_data" ORDER BY "D1"'
+sql_advanced = """SELECT D1, D2, D3, SUM(M1), SUM(M2), SUM(M3)
+                  FROM "important_data"
+                  GROUP BY D1, D2, D3
+                  ORDER BY D1"""
 
-query_b = DbQuery(db_path, ds.fields, sql_basic)
-query_it_basic = query_b.get_row_gen()
+query_basic = DbQuery(db_path, ds.fields, sql_basic)
+query_advanced = DbQuery(db_path, ds.fields, sql_advanced)
+
+it_basic = query_basic.get_row_gen()
+it_advanced = query_advanced.get_row_gen()
 
 path_basic = os.path.join(OUTPUT_DIR, 'basic_results.tsv')
-recv_basic = CsvWriter(path_basic, ds.fields, delimiter='\t')
+path_advanced = os.path.join(OUTPUT_DIR, 'advanced_results.tsv')
 
-recv_basic.write(query_it_basic)
+recv_basic = CsvWriter(path_basic, ds.fields, delimiter='\t')
+recv_advanced = CsvWriter(path_advanced, ds.fields, delimiter='\t')
+
+recv_basic.write(it_basic)
+recv_advanced.write(it_advanced)
