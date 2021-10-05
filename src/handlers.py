@@ -49,6 +49,7 @@ class JsonInputHandler(BaseHandler):
 
 
 class CsvWriter(BaseHandler):
+    """"""
     def __init__(self, file_path: str, fields: list, **fmtparams) -> None:
         self.fmtparams = fmtparams
         super().__init__(file_path, fields)
@@ -63,12 +64,13 @@ class CsvWriter(BaseHandler):
 
 
 class DbFiller(BaseHandler):
-
+    """Gets iterable and inserts its items in the given database."""
     def __init__(self, file_path: str, fields: list) -> None:
         self.insert_counter_limit = 1000
         super().__init__(file_path, fields)
 
     def create_table(self):
+        """Creates table if not exists."""
         con = sqlite3.connect(self.file_path)
         cur = con.cursor()
         cur.execute('''CREATE TABLE IF NOT EXISTS important_data
@@ -81,6 +83,7 @@ class DbFiller(BaseHandler):
         con.close()
 
     def write(self, it):
+        """Writes data from iterable incrementally."""
         con = sqlite3.connect(self.file_path)
         cur = con.cursor()
         op_counter = 0
