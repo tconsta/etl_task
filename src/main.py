@@ -5,7 +5,7 @@
 import os
 from pathlib import Path
 
-from handlers import DataStructIdent, CsvInputHandler
+from handlers import DataStructIdent, CsvInputHandler, DbFiller
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 INPUT_DIR = os.path.join(BASE_DIR, 'data_input')
@@ -15,6 +15,10 @@ ds = DataStructIdent(fields=['D2', 'D1', 'D3', 'M1', 'M2', 'M3'])
 
 path1 = os.path.join(INPUT_DIR, 'csv_data_1.csv')
 src1 = CsvInputHandler(path1, ds.fields, delimiter=',')
+it1_from_csv1 = src1.get_row_gen()
 
-for row in src1.get_row_gen():
-    print(row)
+
+db_path = os.path.join(OUTPUT_DIR, 'quite_a_few_Gb.sqlite3')
+db = DbFiller(db_path, ds.fields)
+db.create_table()
+db.write(it1_from_csv1)

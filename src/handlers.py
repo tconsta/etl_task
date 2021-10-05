@@ -1,6 +1,7 @@
 """handlers.py: A set of classes for working with data of different formats."""
 
 import csv
+import sqlite3
 
 
 class BaseHandler:
@@ -52,7 +53,37 @@ class CsvWriter(BaseHandler):
 
 
 class DbFiller(BaseHandler):
-    pass
+
+    def __init__(self, file_path: str, fields: list) -> None:
+        self.insert_counter_limit = 1000
+        super().__init__(file_path, fields)
+
+    def create_table(self):
+        con = sqlite3.connect(self.file_path)
+        cur = con.cursor()
+        cur.execute('''CREATE TABLE IF NOT EXISTS important_data
+                       (D2 text,
+                        D1 text,
+                        D3 text,
+                        M1 integer,
+                        M2 integer,
+                        M3 integer);''')
+        con.close()
+
+    def write(self, it):
+        con = sqlite3.connect(self.file_path)
+        cur = con.cursor()
+        op_counter = 0
+        for row in it:
+            cur.execute("""INSERT INTO important_data
+                        VALUES (:D2, :D1, :D3, :M1, :M2, :M3)""", row)
+            op_counter += 1
+            # reduce RAM usage
+            if op_counter == self.insert_counter_limit:
+                con.commit()
+                op_counter = 0
+        con.commit()
+        con.close()
 
 
 class DbQuery(BaseHandler):
