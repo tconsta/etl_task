@@ -1,5 +1,7 @@
 """handlers.py: A set of classes for working with data of different formats."""
 
+import csv
+
 
 class BaseHandler:
     def __init__(self, file_path: str, fields: list) -> None:
@@ -19,7 +21,17 @@ class DataStructIdent:
 
 
 class CsvInputHandler(BaseHandler):
-    pass
+    def __init__(self, file_path: str, fields: list, delimiter=',') -> None:
+        self.delimiter = delimiter
+        super().__init__(file_path, fields)
+
+    def get_data_row_gen(self):
+        with open(self.file_path, newline='') as csv_input:
+            reader = csv.DictReader(csv_input, fieldnames=self.fields,
+                                    delimiter=self.delimiter)
+            next(reader)  # skip heading
+            for row in reader:
+                yield row
 
 
 class XmlInputHandler(BaseHandler):
