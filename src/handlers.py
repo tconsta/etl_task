@@ -87,4 +87,12 @@ class DbFiller(BaseHandler):
 
 
 class DbQuery(BaseHandler):
-    pass
+    def __init__(self, file_path: str, fields: list, sql_query: str) -> None:
+        self.query = sql_query
+        super().__init__(file_path, fields)
+
+    def get_row_gen(self):
+        con = sqlite3.connect(self.file_path)
+        cur = con.cursor()
+        for row in cur.execute(self.query):
+            yield {key: val for key, val in zip(self.fields, row)}
