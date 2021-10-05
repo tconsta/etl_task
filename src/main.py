@@ -5,7 +5,9 @@
 import os
 from pathlib import Path
 
-from handlers import DataStructIdent, CsvInputHandler, DbFiller, DbQuery
+from handlers import (DataStructIdent, CsvInputHandler,
+                      XmlInputHandler, JsonInputHandler,
+                      CsvWriter, DbFiller, DbQuery)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 INPUT_DIR = os.path.join(BASE_DIR, 'data_input')
@@ -26,7 +28,9 @@ db.write(it1_from_csv1)
 sql_basic = 'SELECT * FROM "important_data" ORDER BY "D1"'
 
 query_b = DbQuery(db_path, ds.fields, sql_basic)
-query_it = query_b.get_row_gen()
+query_it_basic = query_b.get_row_gen()
 
-for row in query_it:
-    print(row)
+path_basic = os.path.join(OUTPUT_DIR, 'basic_results.tsv')
+recv_basic = CsvWriter(path_basic, ds.fields, delimiter='\t')
+
+recv_basic.write(query_it_basic)

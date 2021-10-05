@@ -49,7 +49,17 @@ class JsonInputHandler(BaseHandler):
 
 
 class CsvWriter(BaseHandler):
-    pass
+    def __init__(self, file_path: str, fields: list, **fmtparams) -> None:
+        self.fmtparams = fmtparams
+        super().__init__(file_path, fields)
+
+    def write(self, it):
+        with open(self.file_path, 'a', newline='') as csv_output:
+            writer = csv.DictWriter(csv_output, fieldnames=self.fields,
+                                    **self.fmtparams)
+            writer.writeheader()
+            for row in it:
+                writer.writerow(row)
 
 
 class DbFiller(BaseHandler):
