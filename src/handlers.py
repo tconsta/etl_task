@@ -5,6 +5,7 @@ import sqlite3
 
 
 class BaseHandler:
+    """Base class that only provides common attributes."""
     def __init__(self, file_path: str, fields: list) -> None:
         self.file_path = file_path
         self.fields = fields
@@ -16,6 +17,7 @@ class DataStructIdent:
         self.file_path = file_path
         self.fields = fields if fields else []
 
+    """Generates list of fields based on the given file."""
     def get_fields_from_csv_head(self, sep=','):
         raise NotImplementedError
 
@@ -30,6 +32,7 @@ class CsvInputHandler(BaseHandler):
         self.delimiter = delimiter
         super().__init__(file_path, fields)
 
+    """Yields rows from the given file as dict incrementally."""
     def get_row_gen(self):
         with open(self.file_path, newline='') as csv_input:
             reader = csv.DictReader(csv_input, delimiter=self.delimiter)
@@ -49,12 +52,13 @@ class JsonInputHandler(BaseHandler):
 
 
 class CsvWriter(BaseHandler):
-    """"""
+    """Gets iterable and inserts its items in the given .csv file."""
     def __init__(self, file_path: str, fields: list, **fmtparams) -> None:
         self.fmtparams = fmtparams
         super().__init__(file_path, fields)
 
     def write(self, it):
+        """Writes data from iterable incrementally."""
         with open(self.file_path, 'a', newline='') as csv_output:
             writer = csv.DictWriter(csv_output, fieldnames=self.fields,
                                     **self.fmtparams)
@@ -100,11 +104,13 @@ class DbFiller(BaseHandler):
 
 
 class DbQuery(BaseHandler):
+    """Makes SQL queries and provides results incrementally."""
     def __init__(self, file_path: str, fields: list, sql_query: str) -> None:
         self.query = sql_query
         super().__init__(file_path, fields)
 
     def get_row_gen(self):
+        """Yields results of the SQL query as dict incrementally."""
         con = sqlite3.connect(self.file_path)
         cur = con.cursor()
         for row in cur.execute(self.query):
