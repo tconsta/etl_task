@@ -2,6 +2,7 @@
 
 import csv
 import sqlite3
+import xml.etree.ElementTree as et
 
 
 class BaseHandler:
@@ -44,11 +45,31 @@ class CsvInputHandler(BaseHandler):
 
 
 class XmlInputHandler(BaseHandler):
-    pass
+
+    """Yields "rows" from the given file as dict incrementally."""
+    def get_row_gen(self):
+        data = {}
+        key = None
+
+        context = et.iterparse(self.file_path, events=("start", "end"))
+        for ev, elem in context:
+            if ev == 'start' and elem.tag == 'objects':
+                data = {}
+            if ev == 'start' and elem.tag == 'object':
+                key = elem.attrib['name']
+            if ev == 'start' and elem.tag == 'value':
+                val = elem.text
+                data[key] = val
+            if ev == 'end' and elem.tag == 'objects':
+                nice_data = {key: data[key] for key in self.fields}
+                yield nice_data
 
 
 class JsonInputHandler(BaseHandler):
-    pass
+
+    """Yields "rows" from the given file as dict incrementally."""
+    def get_row_gen(self):
+        pass
 
 
 class CsvWriter(BaseHandler):
