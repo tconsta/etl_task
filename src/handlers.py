@@ -45,12 +45,11 @@ class CsvInputHandler(BaseHandler):
 
 
 class XmlInputHandler(BaseHandler):
-
-    """Yields "rows" from the given file as dict incrementally."""
+    """Yields "rows" from the given xml file as dict incrementally."""
     def get_row_gen(self):
+        """Yields "rows" from the given xml file as dict incrementally."""
         data = {}
         key = None
-
         context = et.iterparse(self.file_path, events=("start", "end"))
         for ev, elem in context:
             if ev == 'start' and elem.tag == 'objects':
@@ -67,7 +66,7 @@ class XmlInputHandler(BaseHandler):
 
 class JsonInputHandler(BaseHandler):
 
-    """Yields "rows" from the given file as dict incrementally."""
+    """Yields "rows" from the given json file as dict incrementally."""
     def get_row_gen(self):
         pass
 
