@@ -8,20 +8,29 @@ import json_stream
 
 
 class BaseHandler:
-    """Base class that only provides common attributes."""
-    def __init__(self, file_path: str, fields: list) -> None:
+    """Base class that only provides common attributes to its subclasses."""
+    def __init__(self, file_path: str, fields: list):
         self.file_path = file_path
         self.fields = fields
 
 
-class DataStructIdent:
-    """Stores the received list of fields or generates it based on the file."""
-    def __init__(self, file_path: str = None, fields: list = None) -> None:
-        self.file_path = file_path
-        self.fields = fields if fields else []
+class HeaderType:
+    """Configures in/out data dimensionality: n,m (X1..Xn, Y1..Ym) and name literals X,Y.
 
-    """Generates list of fields based on the given file."""
-    def get_fields_from_csv_head(self, sep=','):
+    Stores the specified parameters or generates them based on the given file header."""
+    def __init__(self, file_path: str = None,
+                 X: str = None, n: int = None,
+                 Y: str = None, m: int = None):
+        self.file_path = file_path
+        # Feature group 1 (X1..Xn)
+        self.X = X
+        self.n = n
+        # Feature group 2 (Y1..Ym)
+        self.Y = Y
+        self.m = m
+
+    """Generates list of params based on the given file."""
+    def get_params_from_csv_head(self):
         raise NotImplementedError
 
 
@@ -31,7 +40,7 @@ class CsvInputHandler(BaseHandler):
 
     Places it in the desired order, filtering out unnecessary fields.
     """
-    def __init__(self, file_path: str, fields: list, delimiter=',') -> None:
+    def __init__(self, file_path: str, fields: list, delimiter=','):
         self.delimiter = delimiter
         super().__init__(file_path, fields)
 
@@ -82,23 +91,24 @@ class JsonInputHandler(BaseHandler):
 
 class CsvWriter(BaseHandler):
     """Gets iterable and inserts its items in the given .csv file."""
-    def __init__(self, file_path: str, fields: list, **fmtparams) -> None:
+    def __init__(self, file_path: str, fields: list, **fmtparams):
         self.fmtparams = fmtparams
         super().__init__(file_path, fields)
 
-    def write(self, it):
+    def write(self, it, aliases=None):
         """Writes data from iterable incrementally."""
+        aliases = aliases if aliases else self.fields
         with open(self.file_path, 'a', newline='') as csv_output:
             writer = csv.DictWriter(csv_output, fieldnames=self.fields,
                                     **self.fmtparams)
-            writer.writeheader()
+            writer.writerow(aliases)
             for row in it:
                 writer.writerow(row)
 
 
 class DbFiller(BaseHandler):
     """Gets iterable and inserts its items in the given database."""
-    def __init__(self, file_path: str, fields: list) -> None:
+    def __init__(self, file_path: str, fields: list):
         self.insert_counter_limit = 1000
         super().__init__(file_path, fields)
 
@@ -107,8 +117,8 @@ class DbFiller(BaseHandler):
         con = sqlite3.connect(self.file_path)
         cur = con.cursor()
         cur.execute('''CREATE TABLE IF NOT EXISTS important_data
-                       (D2 text,
-                        D1 text,
+                       (D1 text,
+                        D2 text,
                         D3 text,
                         M1 integer,
                         M2 integer,
@@ -122,7 +132,7 @@ class DbFiller(BaseHandler):
         op_counter = 0
         for row in it:
             cur.execute("""INSERT INTO important_data
-                        VALUES (:D2, :D1, :D3, :M1, :M2, :M3)""", row)
+                        VALUES (:D1, :D1, :D3, :M1, :M2, :M3)""", row)
             op_counter += 1
             # reduce RAM usage
             if op_counter == self.insert_counter_limit:
@@ -134,7 +144,7 @@ class DbFiller(BaseHandler):
 
 class DbQuery(BaseHandler):
     """Makes SQL queries and provides results incrementally."""
-    def __init__(self, file_path: str, fields: list, sql_query: str) -> None:
+    def __init__(self, file_path: str, fields: list, sql_query: str):
         self.query = sql_query
         super().__init__(file_path, fields)
 

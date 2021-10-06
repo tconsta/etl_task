@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import itertools
 
-from handlers import (DataStructIdent, CsvInputHandler,
+from handlers import (HeaderType, CsvInputHandler,
                       XmlInputHandler, JsonInputHandler,
                       CsvWriter, DbFiller, DbQuery)
 
@@ -16,8 +16,8 @@ INPUT_DIR = os.path.join(BASE_DIR, 'data_input')
 # Load data to
 OUTPUT_DIR = os.path.join(BASE_DIR, 'data_output')
 
-# Define required data fields and its order
-ds = DataStructIdent(fields=['D2', 'D1', 'D3', 'M1', 'M2', 'M3'])
+# Define input/output data specifics
+header = HeaderType('D', 3, 'M', 3)
 
 # Data source 1
 path1 = os.path.join(INPUT_DIR, 'csv_data_1.csv')
@@ -69,4 +69,4 @@ recv_basic = CsvWriter(path_basic, ds.fields, delimiter='\t')
 recv_advanced = CsvWriter(path_advanced, ds.fields, delimiter='\t')
 
 recv_basic.write(it_basic)
-recv_advanced.write(it_advanced)
+recv_advanced.write(it_advanced, aliases=['D1', 'D2', 'D3', 'MS1', 'MS2', 'MS3'])
