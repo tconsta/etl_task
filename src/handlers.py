@@ -4,6 +4,8 @@ import csv
 import sqlite3
 import xml.etree.ElementTree as et
 
+import json_stream
+
 
 class BaseHandler:
     """Base class that only provides common attributes."""
@@ -65,10 +67,17 @@ class XmlInputHandler(BaseHandler):
 
 
 class JsonInputHandler(BaseHandler):
-
     """Yields "rows" from the given json file as dict incrementally."""
     def get_row_gen(self):
-        pass
+        """Yields "rows" from the given json file as dict incrementally."""
+        with open(self.file_path, newline='') as json_input:
+            # array start can be found somewhere in the first QTY charachters
+            QTY = 100
+            array_start = json_input.read(QTY).find('[')
+            json_input.seek(array_start)
+            for data in json_stream.stream_array(json_stream.tokenize(json_input)):
+                nice_data = {key: data[key] for key in self.fields}
+                yield nice_data
 
 
 class CsvWriter(BaseHandler):
