@@ -93,16 +93,16 @@ class XmlInputHandler(BaseHandler):
 
 
 class JsonInputHandler(BaseHandler):
-    """Yields "rows" from the given json file as dict incrementally."""
+    """Yields "rows" from the given json file as tuple incrementally."""
     def get_row_gen(self):
-        """Yields "rows" from the given json file as dict incrementally."""
+        """Yields "rows" from the given json file as tuple incrementally."""
         with open(self.file_path, newline='') as json_input:
             # array start can be found somewhere in the first QTY charachters
             QTY = 100
             array_start = json_input.read(QTY).find('[')
             json_input.seek(array_start)
-            for data in json_stream.stream_array(json_stream.tokenize(json_input)):
-                nice_data = {key: data[key] for key in self.fields}
+            for d in json_stream.stream_array(json_stream.tokenize(json_input)):
+                nice_data = tuple(d[key] for key in self.fields[0] + self.fields[1])
                 yield nice_data
 
 
@@ -218,6 +218,5 @@ class DbQuery(BaseDb):
                   FROM "important_data"
                   GROUP BY {first_cols}
                   ORDER BY {first_cols}"""
-        print(sql_advanced)
         for row in cur.execute(sql_advanced):
             yield row

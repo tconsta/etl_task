@@ -25,14 +25,14 @@ src1 = CsvInputHandler(path1, domain_obj.fields)
 it1_from_csv1 = src1.get_row_gen()
 
 # # Data source 2
-# path2 = os.path.join(INPUT_DIR, 'csv_data_2.csv')
-# src2 = CsvInputHandler(path2, domain_obj.fields)
-# it2_from_csv2 = src2.get_row_gen()
+path2 = os.path.join(INPUT_DIR, 'csv_data_2.csv')
+src2 = CsvInputHandler(path2, domain_obj.fields)
+it2_from_csv2 = src2.get_row_gen()
 
-# # Data source 3
-# path3 = os.path.join(INPUT_DIR, 'json_data.json')
-# src3 = JsonInputHandler(path3, domain_obj.fields)
-# it3_from_json = src3.get_row_gen()
+# Data source 3
+path3 = os.path.join(INPUT_DIR, 'json_data.json')
+src3 = JsonInputHandler(path3, domain_obj.fields)
+it3_from_json = src3.get_row_gen()
 
 # # Data source 4
 # path4 = os.path.join(INPUT_DIR, 'xml_data.xml')
@@ -40,8 +40,8 @@ it1_from_csv1 = src1.get_row_gen()
 # it4_from_xml = src4.get_row_gen()
 
 # Combine all sources
-all_sources_it = itertools.chain(it1_from_csv1)  # , it2_from_csv2,
-#                                 it3_from_json, it4_from_xml)
+all_sources_it = itertools.chain(it1_from_csv1, it2_from_csv2,
+                                 it3_from_json)
 
 # Intermediate results: database
 db_path = os.path.join(OUTPUT_DIR, 'quite_a_few_Gb.sqlite3')
