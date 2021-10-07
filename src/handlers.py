@@ -88,7 +88,7 @@ class XmlInputHandler(BaseHandler):
                 val = elem.text
                 data[key] = val
             if ev == 'end' and elem.tag == 'objects':
-                nice_data = {key: data[key] for key in self.fields}
+                nice_data = tuple(data[key] for key in self.fields[0] + self.fields[1])
                 yield nice_data
 
 

@@ -35,13 +35,13 @@ src3 = JsonInputHandler(path3, domain_obj.fields)
 it3_from_json = src3.get_row_gen()
 
 # # Data source 4
-# path4 = os.path.join(INPUT_DIR, 'xml_data.xml')
-# src4 = XmlInputHandler(path4, domain_obj.fields)
-# it4_from_xml = src4.get_row_gen()
+path4 = os.path.join(INPUT_DIR, 'xml_data.xml')
+src4 = XmlInputHandler(path4, domain_obj.fields)
+it4_from_xml = src4.get_row_gen()
 
 # Combine all sources
 all_sources_it = itertools.chain(it1_from_csv1, it2_from_csv2,
-                                 it3_from_json)
+                                 it3_from_json, it4_from_xml)
 
 # Intermediate results: database
 db_path = os.path.join(OUTPUT_DIR, 'quite_a_few_Gb.sqlite3')
