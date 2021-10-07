@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import itertools
 import copy
+import logging
 
 from handlers import (HeaderType, CsvInputHandler,
                       XmlInputHandler, JsonInputHandler,
@@ -16,6 +17,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 INPUT_DIR = os.path.join(BASE_DIR, 'data_input')
 # Load data to
 OUTPUT_DIR = os.path.join(BASE_DIR, 'data_output')
+
+# Logging
+log_path = os.path.join(OUTPUT_DIR, 'etl_log.log')
+log_format = "%(asctime)s - %(levelname)s - %(module)s: %(lineno)d - %(message)s"
+logging.basicConfig(level='DEBUG', format=log_format)
+# logging.basicConfig(level='DEBUG', format=log_format, filename=log_path)
+log = logging.getLogger('ETL_logger')
 
 # Define input/output data specifics
 domain_obj = HeaderType('D', 3, 'M', 3)

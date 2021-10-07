@@ -3,8 +3,10 @@
 import csv
 import sqlite3
 import xml.etree.ElementTree as et
-
+import logging
 import json_stream
+
+log = logging.getLogger('ETL_logger')
 
 
 class BaseHandler:
