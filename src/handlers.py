@@ -58,19 +58,22 @@ class CsvInputHandler(BaseHandler):
 
     Places it in the desired order, filtering out unnecessary fields.
     """
-    def __init__(self, file_path: str, fields: list, **fmtparams):
+    def __init__(self, file_path: str, fields: tuple, **fmtparams):
         self.fmtparams = fmtparams
         super().__init__(file_path, fields)
 
     """Yields rows from the given file as dict incrementally."""
     def get_row_gen(self):
         with open(self.file_path, newline='') as csv_input:
-            reader = csv.DictReader(csv_input, **self.fmtparams)
+            dr = csv.DictReader(csv_input, **self.fmtparams)
             # heading already grabbed by reader, start read data
-            for row in reader:
+            for d in dr:
                 # delete unnecessary data and order as required
-                nice_data = {key: row[key] for key in self.fields}
-                yield nice_data
+                # X1,X2..Xn
+                first = tuple(d[key] for key in sorted(self.fields[0]))
+                # Y1,Y2..Ym
+                second = tuple(d[key] for key in sorted(self.fields[1]))
+                yield first, second
 
 
 class XmlInputHandler(BaseHandler):
