@@ -21,8 +21,8 @@ OUTPUT_DIR = os.path.join(BASE_DIR, 'data_output')
 # Logging
 log_path = os.path.join(OUTPUT_DIR, 'etl_log.log')
 log_format = "%(asctime)s - %(levelname)s - %(module)s: %(lineno)d - %(message)s"
-logging.basicConfig(level='DEBUG', format=log_format)
-# logging.basicConfig(level='DEBUG', format=log_format, filename=log_path)
+# logging.basicConfig(level='DEBUG', format=log_format)
+logging.basicConfig(level='INFO', format=log_format, filename=log_path)
 log = logging.getLogger('ETL_logger')
 
 # Define input/output data specifics
@@ -56,6 +56,7 @@ all_sources_it = itertools.chain(it1_from_csv1, it2_from_csv2,
 db_path = os.path.join(OUTPUT_DIR, 'quite_a_few_Gb.sqlite3')
 db = DbWriter(db_path, domain_obj.fields)
 db.create_table()
+log.info('Writing to DB started...')
 db.write(all_sources_it)
 
 query = DbQuery(db_path, domain_obj.fields)
@@ -75,5 +76,7 @@ aliased = copy.deepcopy(domain_obj)
 aliased.second_lit = 'MS'
 aliased.make_heading()
 
+log.info('Writing to csv started...')
 recv_basic.write(it_basic)
 recv_advanced.write(it_advanced, aliases=aliased.plain_fields)
+log.info('Completed successfully!')

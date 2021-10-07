@@ -1,5 +1,6 @@
 """handlers.py: A set of classes for working with data of different formats."""
 
+import sys
 import csv
 import sqlite3
 import xml.etree.ElementTree as et
@@ -60,7 +61,7 @@ class CsvInputHandler(BaseHandler):
         self.fmtparams = fmtparams
         super().__init__(file_path, fields)
 
-    """Yields rows from the given file as dict incrementally."""
+    """Yields rows from the given file as tuple incrementally."""
     def get_row_gen(self):
         with open(self.file_path, newline='') as csv_input:
             dr = csv.DictReader(csv_input, **self.fmtparams)
@@ -68,14 +69,21 @@ class CsvInputHandler(BaseHandler):
             for d in dr:
                 # delete unnecessary data and order as required
                 # X1,X2..Xn
-                nice_data = tuple(d[key] for key in self.fields[0] + self.fields[1])
-                yield nice_data
+                try:
+                    nice_data = tuple(d[key] for key in self.fields[0] + self.fields[1])
+                except Exception as ex:
+                    msg = f'Unable to load data from csv row! {ex}'
+                    detail = f'Input data: {d} Expected: {self.fields[0] + self.fields[1]}'
+                    log.warning(msg)
+                    log.warning(detail)
+                else:
+                    yield nice_data
 
 
 class XmlInputHandler(BaseHandler):
-    """Yields "rows" from the given xml file as dict incrementally."""
+    """Yields "rows" from the given xml file as tuple incrementally."""
     def get_row_gen(self):
-        """Yields "rows" from the given xml file as dict incrementally."""
+        """Yields "rows" from the given xml file as tuple incrementally."""
         data = {}
         key = None
         context = et.iterparse(self.file_path, events=("start", "end"))
@@ -88,8 +96,15 @@ class XmlInputHandler(BaseHandler):
                 val = elem.text
                 data[key] = val
             if ev == 'end' and elem.tag == 'objects':
-                nice_data = tuple(data[key] for key in self.fields[0] + self.fields[1])
-                yield nice_data
+                try:
+                    nice_data = tuple(data[key] for key in self.fields[0] + self.fields[1])
+                except Exception as ex:
+                    msg = f'Unable to load data from xml object! {ex}'
+                    detail = f'Input data: {data} Expected: {self.fields[0] + self.fields[1]}'
+                    log.warning(msg)
+                    log.warning(detail)
+                else:
+                    yield nice_data
 
 
 class JsonInputHandler(BaseHandler):
@@ -102,8 +117,15 @@ class JsonInputHandler(BaseHandler):
             array_start = json_input.read(QTY).find('[')
             json_input.seek(array_start)
             for d in json_stream.stream_array(json_stream.tokenize(json_input)):
-                nice_data = tuple(str(d[key]) for key in self.fields[0] + self.fields[1])
-                yield nice_data
+                try:
+                    nice_data = tuple(str(d[key]) for key in self.fields[0] + self.fields[1])
+                except Exception as ex:
+                    msg = f'Unable to load data from json object! {ex}'
+                    detail = f'Input data: {d} Expected: {self.fields[0] + self.fields[1]}'
+                    log.warning(msg)
+                    log.warning(detail)
+                else:
+                    yield nice_data
 
 
 class CsvWriter(BaseHandler):
@@ -136,7 +158,6 @@ class BaseDb(BaseHandler):
     def _validate_sql(x):
         for item in ("--", "/**/", ";"):
             if item in x:
-                print('evil detected')
                 raise Exception
 
 
@@ -151,17 +172,23 @@ class DbWriter(BaseDb):
         """Creates table."""
         con = sqlite3.connect(self.file_path)
         cur = con.cursor()
-        self.validate_fields()
-        columns = ''
-        for col in self.fields[0]:
-            columns += ' %s text, ' % col
-        for col in self.fields[1]:
-            columns += ' %s integer, ' % col
-        # remove last comma
-        columns = columns[:-2]
-        cur.execute('DROP TABLE IF EXISTS important_data')
-        cur.execute(f'CREATE TABLE important_data ({columns})')
-        con.close()
+        try:
+            self.validate_fields()
+        except Exception:
+            msg = f'Unable to create table. SQL injection detected! Fields: {self.fields}'
+            log.error(msg)
+            sys.exit(1)
+        else:
+            columns = ''
+            for col in self.fields[0]:
+                columns += ' %s text, ' % col
+            for col in self.fields[1]:
+                columns += ' %s integer, ' % col
+            # remove last comma
+            columns = columns[:-2]
+            cur.execute('DROP TABLE IF EXISTS important_data')
+            cur.execute(f'CREATE TABLE important_data ({columns})')
+            con.close()
 
     def write(self, it):
         """Writes data from iterable incrementally."""
@@ -172,8 +199,8 @@ class DbWriter(BaseDb):
             try:
                 self.validate_data(row)
             except Exception:
-                from pprint import pprint
-                pprint(list(row))
+                msg = f'SQL injection detected! Input: {row}'
+                log.error(msg)
                 continue
             else:
                 n = len(self.fields[0]) + len(self.fields[1])
