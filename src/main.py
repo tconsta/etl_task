@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-"""main.py: ETL data processing in accordance with the conditions of the test task."""
+"""main.py: ETL data processing in accordance with the test task."""
 
 import os
 from pathlib import Path
 import itertools
+import copy
 
 from handlers import (HeaderType, CsvInputHandler,
                       XmlInputHandler, JsonInputHandler,
@@ -49,19 +50,22 @@ db = DbWriter(db_path, domain_obj.fields)
 db.create_table()
 db.write(all_sources_it)
 
-# Final results
 query = DbQuery(db_path, domain_obj.fields)
-
 it_basic = query.make_basic_query()
 it_advanced = query.make_advanced_query()
 
+# Final results
 path_basic = os.path.join(OUTPUT_DIR, 'basic_results.tsv')
 path_advanced = os.path.join(OUTPUT_DIR, 'advanced_results.tsv')
 
 recv_basic = CsvWriter(path_basic, domain_obj.fields, delimiter='\t')
 recv_advanced = CsvWriter(path_advanced, domain_obj.fields, delimiter='\t')
 
-recv_basic.write(it_basic)
+# Create a header for the advanced query
+# based on the structure of an existing object
+aliased = copy.deepcopy(domain_obj)
+aliased.second_lit = 'MS'
+aliased.make_heading()
 
-adv_aliases = ('D1', 'D2', 'D3', 'MS1', 'MS2', 'MS3')
-recv_advanced.write(it_advanced, aliases=adv_aliases)
+recv_basic.write(it_basic)
+recv_advanced.write(it_advanced, aliases=aliased.plain_fields)

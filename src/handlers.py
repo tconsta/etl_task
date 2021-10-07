@@ -26,11 +26,12 @@ class HeaderType:
         # Feature group 2 (Y1..Ym)
         self.second_lit = second_lit
         self.num_second = num_second
-        if self.first_lit:
-            # value example: (('X1', 'X2', 'X3'),('Y1', 'Y2', 'Y3'))
-            self.fields = self._make_head()
+        if (self.first_lit and self.second_lit and self.num_first and self.num_second):
+            # self.fields example: (('X1', 'X2', 'X3'),('Y1', 'Y2', 'Y3'))
+            # and self.plain_fields: ('X1', 'X2', 'X3','Y1', 'Y2', 'Y3')
+            self.make_heading()
 
-    def _make_head(self):
+    def make_heading(self):
         """Creates parameters for easy iteration."""
         first = []
         second = []
@@ -38,15 +39,12 @@ class HeaderType:
             first.append(self.first_lit + str(i + 1))
         for i in range(self.num_second):
             second.append(self.second_lit + str(i + 1))
-        fields = tuple(first), tuple(second)
-        return fields
+        self.fields = tuple(first), tuple(second)
+        self.plain_fields = tuple(first) + tuple(second)
 
     """Generates fields based on the given file."""
     def get_header_from_csv_head(self, file_path, *args):
-        with open(file_path, newline='') as csv_input:
-            r = csv.reader(csv_input, args)
-            r.readline()
-
+        # not a big deal
         raise NotImplementedError
 
 
@@ -208,11 +206,11 @@ class DbQuery(BaseDb):
 
         first_cols = second_cols = ''
         for col in self.fields[0]:
-            first_cols += f'{col}, '
+            first_cols += f'"{col}", '
         # remove last comma
         first_cols = first_cols[:-2]
         for col in self.fields[1]:
-            second_cols += f'SUM({col}), '
+            second_cols += f'SUM("{col}"), '
         # remove last comma
         second_cols = second_cols[:-2]
 
