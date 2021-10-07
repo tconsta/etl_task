@@ -21,7 +21,6 @@ OUTPUT_DIR = os.path.join(BASE_DIR, 'data_output')
 # Logging
 log_path = os.path.join(OUTPUT_DIR, 'etl_log.log')
 log_format = "%(asctime)s - %(levelname)s - %(module)s: %(lineno)d - %(message)s"
-# logging.basicConfig(level='DEBUG', format=log_format)
 logging.basicConfig(level='INFO', format=log_format, filename=log_path)
 log = logging.getLogger('ETL_logger')
 
