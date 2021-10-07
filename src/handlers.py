@@ -61,8 +61,8 @@ class CsvInputHandler(BaseHandler):
         self.fmtparams = fmtparams
         super().__init__(file_path, fields)
 
-    """Yields rows from the given file as tuple incrementally."""
     def get_row_gen(self):
+        """Yields rows from the given file as tuple incrementally."""
         with open(self.file_path, newline='') as csv_input:
             dr = csv.DictReader(csv_input, **self.fmtparams)
             # heading already grabbed by reader, start read data
