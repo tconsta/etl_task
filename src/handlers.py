@@ -26,8 +26,8 @@ class HeaderType:
         # Feature group 2 (Y1..Ym)
         self.second_lit = second_lit
         self.num_second = num_second
-        # example: make (('X1', 'X2', 'X3'),('Y1', 'Y2', 'Y3'))
         if self.first_lit:
+            # value example: (('X1', 'X2', 'X3'),('Y1', 'Y2', 'Y3'))
             self.fields = self._make_head()
 
     def _make_head(self):
@@ -123,12 +123,21 @@ class CsvWriter(BaseHandler):
 
 
 class BaseDb(BaseHandler):
+    """Provides methods for a very basic SQL injection prevention."""
+    @staticmethod
+    def validate_data(row):
+        for item in row:
+            BaseDb._validate_sql(item)
 
     def validate_fields(self):
-        pass
+        for item in self.fields[0] + self.fields[1]:
+            BaseDb._validate_sql(item)
 
-    def validate_data(self, row):
-        pass
+    def _validate_sql(x):
+        for item in ("--", "/**/", ";"):
+            if item in x:
+                print('evil detected')
+                raise Exception
 
 
 class DbWriter(BaseDb):
@@ -137,13 +146,12 @@ class DbWriter(BaseDb):
         # Commit when exceeded to reduce RAM usage
         self.insert_counter_limit = 1000
         super().__init__(file_path, fields)
-        self.validate_fields()
-
 
     def create_table(self):
         """Creates table."""
         con = sqlite3.connect(self.file_path)
         cur = con.cursor()
+        self.validate_fields()
         columns = ''
         for col in self.fields[0]:
             columns += ' %s text, ' % col
@@ -183,14 +191,8 @@ class DbWriter(BaseDb):
 
 class DbQuery(BaseDb):
     """Makes SQL queries and provides results incrementally."""
-    def get_row_gen(self):
-        """Yields results of the SQL query as dict incrementally."""
-        con = sqlite3.connect(self.file_path)
-        cur = con.cursor()
-        for row in cur.execute(self.query):
-            yield {key: val for key, val in zip(self.fields, row)}
-
     def make_basic_query(self):
+        """Yields results of the SQL query incrementally."""
         con = sqlite3.connect(self.file_path)
         cur = con.cursor()
         sql_basic = 'SELECT * FROM "important_data" ORDER BY %s' % self.fields[0][0]
@@ -198,6 +200,7 @@ class DbQuery(BaseDb):
             yield row
 
     def make_advanced_query(self):
+        """Yields results of the SQL query incrementally."""
         con = sqlite3.connect(self.file_path)
         cur = con.cursor()
 
@@ -218,4 +221,3 @@ class DbQuery(BaseDb):
         print(sql_advanced)
         for row in cur.execute(sql_advanced):
             yield row
-
