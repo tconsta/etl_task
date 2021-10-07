@@ -29,7 +29,7 @@ class HeaderType:
         # example: make (('X1', 'X2', 'X3'),('Y1', 'Y2', 'Y3'))
         # and ('X1', 'X2', 'X3', 'Y1', 'Y2', 'Y3')
         if self.first_lit:
-            self.fields, self.plain_fields = self._make_head()
+            self.fields = self._make_head()
 
     def _make_head(self):
         """Creates parameters for easy iteration."""
@@ -40,8 +40,7 @@ class HeaderType:
         for i in range(self.num_second):
             second.append(self.second_lit + str(i + 1))
         fields = tuple(first), tuple(second)
-        plain_fields = tuple(first + second)
-        return fields, plain_fields
+        return fields
 
     """Generates fields based on the given file."""
     def get_header_from_csv_head(self, file_path, *args):
@@ -70,10 +69,8 @@ class CsvInputHandler(BaseHandler):
             for d in dr:
                 # delete unnecessary data and order as required
                 # X1,X2..Xn
-                first = tuple(d[key] for key in sorted(self.fields[0]))
-                # Y1,Y2..Ym
-                second = tuple(d[key] for key in sorted(self.fields[1]))
-                yield first, second
+                nice_data = tuple(d[key] for key in self.fields[0] + self.fields[1])
+                yield nice_data
 
 
 class XmlInputHandler(BaseHandler):
@@ -118,32 +115,41 @@ class CsvWriter(BaseHandler):
 
     def write(self, it, aliases=None):
         """Writes data from iterable incrementally."""
-        aliases = aliases if aliases else self.fields
+        aliases = aliases if aliases else self.fields[0] + self.fields[1]
         with open(self.file_path, 'a', newline='') as csv_output:
-            writer = csv.DictWriter(csv_output, fieldnames=self.fields,
-                                    **self.fmtparams)
+            writer = csv.writer(csv_output, **self.fmtparams)
             writer.writerow(aliases)
             for row in it:
                 writer.writerow(row)
 
 
-class DbFiller(BaseHandler):
+class DbWriter(BaseHandler):
     """Gets iterable and inserts its items in the given database."""
     def __init__(self, file_path: str, fields: list):
+        # Commit when exceeded to reduce RAM usage
         self.insert_counter_limit = 1000
         super().__init__(file_path, fields)
+        self.validate_fields()
+
+    def validate_fields(self):
+        pass
+
+    def validate_data(self, row):
+        pass
 
     def create_table(self):
-        """Creates table if not exists."""
+        """Creates table."""
         con = sqlite3.connect(self.file_path)
         cur = con.cursor()
-        cur.execute('''CREATE TABLE IF NOT EXISTS important_data
-                       (D1 text,
-                        D2 text,
-                        D3 text,
-                        M1 integer,
-                        M2 integer,
-                        M3 integer);''')
+        columns = ''
+        for col in self.fields[0]:
+            columns += ' %s text, ' % col
+        for col in self.fields[1]:
+            columns += ' %s integer, ' % col
+        # remove last comma
+        columns = columns[:-2]
+        cur.execute('DROP TABLE IF EXISTS important_data')
+        cur.execute(f'CREATE TABLE important_data ({columns})')
         con.close()
 
     def write(self, it):
@@ -152,9 +158,18 @@ class DbFiller(BaseHandler):
         cur = con.cursor()
         op_counter = 0
         for row in it:
-            cur.execute("""INSERT INTO important_data
-                        VALUES (:D1, :D1, :D3, :M1, :M2, :M3)""", row)
-            op_counter += 1
+            try:
+                self.validate_data(row)
+            except Exception:
+                continue
+            else:
+                n = len(self.fields[0]) + len(self.fields[1])
+                columns = ' ?, ' * n
+                # remove last comma
+                columns = columns[:-2]
+                cur.execute(f"""INSERT INTO important_data
+                        VALUES ({columns})""", row)
+                op_counter += 1
             # reduce RAM usage
             if op_counter == self.insert_counter_limit:
                 con.commit()

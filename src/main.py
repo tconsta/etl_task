@@ -8,7 +8,7 @@ import itertools
 
 from handlers import (HeaderType, CsvInputHandler,
                       XmlInputHandler, JsonInputHandler,
-                      CsvWriter, DbFiller, DbQuery)
+                      CsvWriter, DbWriter, DbQuery)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Extract data from
@@ -24,32 +24,32 @@ path1 = os.path.join(INPUT_DIR, 'csv_data_1.csv')
 src1 = CsvInputHandler(path1, domain_obj.fields)
 it1_from_csv1 = src1.get_row_gen()
 
-# Data source 2
-path2 = os.path.join(INPUT_DIR, 'csv_data_2.csv')
-src2 = CsvInputHandler(path2, domain_obj.fields)
-it2_from_csv2 = src2.get_row_gen()
+# # Data source 2
+# path2 = os.path.join(INPUT_DIR, 'csv_data_2.csv')
+# src2 = CsvInputHandler(path2, domain_obj.fields)
+# it2_from_csv2 = src2.get_row_gen()
 
-# Data source 3
-path3 = os.path.join(INPUT_DIR, 'json_data.json')
-src3 = JsonInputHandler(path3, domain_obj.fields)
-it3_from_json = src3.get_row_gen()
+# # Data source 3
+# path3 = os.path.join(INPUT_DIR, 'json_data.json')
+# src3 = JsonInputHandler(path3, domain_obj.fields)
+# it3_from_json = src3.get_row_gen()
 
-# Data source 4
-path4 = os.path.join(INPUT_DIR, 'xml_data.xml')
-src4 = XmlInputHandler(path4, domain_obj.fields)
-it4_from_xml = src4.get_row_gen()
+# # Data source 4
+# path4 = os.path.join(INPUT_DIR, 'xml_data.xml')
+# src4 = XmlInputHandler(path4, domain_obj.fields)
+# it4_from_xml = src4.get_row_gen()
 
 # Combine all sources
-all_sources_it = itertools.chain(it1_from_csv1, it2_from_csv2,
-                                 it3_from_json, it4_from_xml)
+all_sources_it = itertools.chain(it1_from_csv1)  # , it2_from_csv2,
+#                                 it3_from_json, it4_from_xml)
 
 # Intermediate results: database
 db_path = os.path.join(OUTPUT_DIR, 'quite_a_few_Gb.sqlite3')
-db = DbFiller(db_path, domain_obj.fields)
+db = DbWriter(db_path, domain_obj.fields)
 db.create_table()
 db.write(all_sources_it)
 
-sql_basic = 'SELECT * FROM "important_data" ORDER BY "D1"'
+sql_basic = 'SELECT * FROM "important_data" ORDER BY %s' % domain_obj.fields[0][0]
 sql_advanced = """SELECT D1, D2, D3, SUM(M1), SUM(M2), SUM(M3)
                   FROM "important_data"
                   GROUP BY D1, D2, D3
