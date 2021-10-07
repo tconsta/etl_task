@@ -9,28 +9,46 @@ import json_stream
 
 class BaseHandler:
     """Base class that only provides common attributes to its subclasses."""
-    def __init__(self, file_path: str, fields: list):
+    def __init__(self, file_path: str, fields: tuple):
         self.file_path = file_path
         self.fields = fields
 
 
 class HeaderType:
-    """Configures in/out data dimensionality: n,m (X1..Xn, Y1..Ym) and name literals X,Y.
+    """Configures in/out data dimensionality: n,m (X1..Xn, Y1..Ym) and name literals for X,Y.
 
     Stores the specified parameters or generates them based on the given file header."""
-    def __init__(self, file_path: str = None,
-                 X: str = None, n: int = None,
-                 Y: str = None, m: int = None):
-        self.file_path = file_path
+    def __init__(self, first_lit: str = None, num_first: int = None,
+                       second_lit: str = None, num_second: int = None):
         # Feature group 1 (X1..Xn)
-        self.X = X
-        self.n = n
+        self.first_lit = first_lit
+        self.num_first = num_first
         # Feature group 2 (Y1..Ym)
-        self.Y = Y
-        self.m = m
+        self.second_lit = second_lit
+        self.num_second = num_second
+        # example: make (('X1', 'X2', 'X3'),('Y1', 'Y2', 'Y3'))
+        # and ('X1', 'X2', 'X3', 'Y1', 'Y2', 'Y3')
+        if self.first_lit:
+            self.fields, self.plain_fields = self._make_head()
 
-    """Generates list of params based on the given file."""
-    def get_params_from_csv_head(self):
+    def _make_head(self):
+        """Creates parameters for easy iteration."""
+        first = []
+        second = []
+        for i in range(self.num_first):
+            first.append(self.first_lit + str(i + 1))
+        for i in range(self.num_second):
+            second.append(self.second_lit + str(i + 1))
+        fields = tuple(first), tuple(second)
+        plain_fields = tuple(first + second)
+        return fields, plain_fields
+
+    """Generates fields based on the given file."""
+    def get_header_from_csv_head(self, file_path, *args):
+        with open(file_path, newline='') as csv_input:
+            r = csv.reader(csv_input, args)
+            r.readline()
+
         raise NotImplementedError
 
 
@@ -40,14 +58,14 @@ class CsvInputHandler(BaseHandler):
 
     Places it in the desired order, filtering out unnecessary fields.
     """
-    def __init__(self, file_path: str, fields: list, delimiter=','):
-        self.delimiter = delimiter
+    def __init__(self, file_path: str, fields: list, **fmtparams):
+        self.fmtparams = fmtparams
         super().__init__(file_path, fields)
 
     """Yields rows from the given file as dict incrementally."""
     def get_row_gen(self):
         with open(self.file_path, newline='') as csv_input:
-            reader = csv.DictReader(csv_input, delimiter=self.delimiter)
+            reader = csv.DictReader(csv_input, **self.fmtparams)
             # heading already grabbed by reader, start read data
             for row in reader:
                 # delete unnecessary data and order as required
