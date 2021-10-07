@@ -102,7 +102,7 @@ class JsonInputHandler(BaseHandler):
             array_start = json_input.read(QTY).find('[')
             json_input.seek(array_start)
             for d in json_stream.stream_array(json_stream.tokenize(json_input)):
-                nice_data = tuple(d[key] for key in self.fields[0] + self.fields[1])
+                nice_data = tuple(str(d[key]) for key in self.fields[0] + self.fields[1])
                 yield nice_data
 
 
@@ -172,6 +172,8 @@ class DbWriter(BaseDb):
             try:
                 self.validate_data(row)
             except Exception:
+                from pprint import pprint
+                pprint(list(row))
                 continue
             else:
                 n = len(self.fields[0]) + len(self.fields[1])
