@@ -27,7 +27,6 @@ class HeaderType:
         self.second_lit = second_lit
         self.num_second = num_second
         # example: make (('X1', 'X2', 'X3'),('Y1', 'Y2', 'Y3'))
-        # and ('X1', 'X2', 'X3', 'Y1', 'Y2', 'Y3')
         if self.first_lit:
             self.fields = self._make_head()
 
@@ -123,7 +122,16 @@ class CsvWriter(BaseHandler):
                 writer.writerow(row)
 
 
-class DbWriter(BaseHandler):
+class BaseDb(BaseHandler):
+
+    def validate_fields(self):
+        pass
+
+    def validate_data(self, row):
+        pass
+
+
+class DbWriter(BaseDb):
     """Gets iterable and inserts its items in the given database."""
     def __init__(self, file_path: str, fields: list):
         # Commit when exceeded to reduce RAM usage
@@ -131,11 +139,6 @@ class DbWriter(BaseHandler):
         super().__init__(file_path, fields)
         self.validate_fields()
 
-    def validate_fields(self):
-        pass
-
-    def validate_data(self, row):
-        pass
 
     def create_table(self):
         """Creates table."""
@@ -178,15 +181,41 @@ class DbWriter(BaseHandler):
         con.close()
 
 
-class DbQuery(BaseHandler):
+class DbQuery(BaseDb):
     """Makes SQL queries and provides results incrementally."""
-    def __init__(self, file_path: str, fields: list, sql_query: str):
-        self.query = sql_query
-        super().__init__(file_path, fields)
-
     def get_row_gen(self):
         """Yields results of the SQL query as dict incrementally."""
         con = sqlite3.connect(self.file_path)
         cur = con.cursor()
         for row in cur.execute(self.query):
             yield {key: val for key, val in zip(self.fields, row)}
+
+    def make_basic_query(self):
+        con = sqlite3.connect(self.file_path)
+        cur = con.cursor()
+        sql_basic = 'SELECT * FROM "important_data" ORDER BY %s' % self.fields[0][0]
+        for row in cur.execute(sql_basic):
+            yield row
+
+    def make_advanced_query(self):
+        con = sqlite3.connect(self.file_path)
+        cur = con.cursor()
+
+        first_cols = second_cols = ''
+        for col in self.fields[0]:
+            first_cols += f'{col}, '
+        # remove last comma
+        first_cols = first_cols[:-2]
+        for col in self.fields[1]:
+            second_cols += f'SUM({col}), '
+        # remove last comma
+        second_cols = second_cols[:-2]
+
+        sql_advanced = f"""SELECT {first_cols}, {second_cols}
+                  FROM "important_data"
+                  GROUP BY {first_cols}
+                  ORDER BY {first_cols}"""
+        print(sql_advanced)
+        for row in cur.execute(sql_advanced):
+            yield row
+

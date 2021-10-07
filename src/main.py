@@ -49,19 +49,12 @@ db = DbWriter(db_path, domain_obj.fields)
 db.create_table()
 db.write(all_sources_it)
 
-sql_basic = 'SELECT * FROM "important_data" ORDER BY %s' % domain_obj.fields[0][0]
-sql_advanced = """SELECT D1, D2, D3, SUM(M1), SUM(M2), SUM(M3)
-                  FROM "important_data"
-                  GROUP BY D1, D2, D3
-                  ORDER BY D1"""
-
-query_basic = DbQuery(db_path, domain_obj.fields, sql_basic)
-query_advanced = DbQuery(db_path, domain_obj.fields, sql_advanced)
-
-it_basic = query_basic.get_row_gen()
-it_advanced = query_advanced.get_row_gen()
-
 # Final results
+query = DbQuery(db_path, domain_obj.fields)
+
+it_basic = query.make_basic_query()
+it_advanced = query.make_advanced_query()
+
 path_basic = os.path.join(OUTPUT_DIR, 'basic_results.tsv')
 path_advanced = os.path.join(OUTPUT_DIR, 'advanced_results.tsv')
 
